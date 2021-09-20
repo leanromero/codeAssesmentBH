@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using BHBank.API.Domain.Models;
 using BHBank.API.Domain.Services;
@@ -25,10 +26,16 @@ namespace BHBank.API.Controllers
         [HttpPost]
         public async Task<IActionResult> PostAsync([FromBody] AccountResource resource)
         {
-            //Only create accounts if the customer exists
+            //Only create accounts if the customer exists and it doesn't have a Current Account already.
             Customer customer = await _customerService.GetByIdAsync(resource.customerID);
             if (customer is null)
                 return BadRequest("Customer does not exist");
+            
+            var result = customer.Accounts.Where(a => a.Type.Equals("Current")).Count();
+
+            if(result > 0)
+                return BadRequest("Customer already have a Current Account");
+
             //create a new account
             Account account = new Account();
             try
